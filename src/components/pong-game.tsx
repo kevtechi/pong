@@ -32,8 +32,19 @@ const BALL_SIZE = 10;
 const PADDLE_SPEED = 5;
 const BALL_SPEED = 4;
 
-export default function PongGame() {
+interface PongGameProps {
+  ballType?: "emoji" | "image";
+  ballValue?: string;
+  onBackToConfig?: () => void;
+}
+
+export default function PongGame({
+  ballType = "emoji",
+  ballValue = "🎾",
+  onBackToConfig,
+}: PongGameProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const ballImageRef = useRef<HTMLImageElement | null>(null);
   const gameStateRef = useRef<GameState>({
     ball: {
       x: CANVAS_WIDTH / 2,
@@ -57,6 +68,19 @@ export default function PongGame() {
   });
 
   const [gameState, setGameState] = useState(gameStateRef.current);
+
+  // Load ball image when ballValue changes
+  useEffect(() => {
+    if (ballType === "image" && ballValue) {
+      const img = new Image();
+      img.onload = () => {
+        ballImageRef.current = img;
+      };
+      img.src = ballValue;
+    } else {
+      ballImageRef.current = null;
+    }
+  }, [ballType, ballValue]);
 
   // Handle keyboard input
   useEffect(() => {
@@ -221,8 +245,19 @@ export default function PongGame() {
         PADDLE_HEIGHT
       );
 
-      // Draw ball
-      ctx.fillRect(state.ball.x, state.ball.y, BALL_SIZE, BALL_SIZE);
+      // Draw ball (emoji or image)
+      if (ballType === "emoji") {
+        ctx.font = `${BALL_SIZE * 2}px monospace`;
+        ctx.fillText(ballValue, state.ball.x, state.ball.y + BALL_SIZE);
+      } else if (ballType === "image" && ballImageRef.current) {
+        ctx.drawImage(
+          ballImageRef.current,
+          state.ball.x,
+          state.ball.y,
+          BALL_SIZE * 2,
+          BALL_SIZE * 2
+        );
+      }
 
       // Draw score
       ctx.font = "48px monospace";
@@ -248,11 +283,21 @@ export default function PongGame() {
     return () => {
       cancelAnimationFrame(animationId);
     };
-  }, []);
+  }, [ballType, ballValue]);
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-black text-white">
-      <h1 className="text-4xl font-bold mb-8">PONG</h1>
+      <div className="flex items-center justify-between w-full max-w-4xl mb-4">
+        <h1 className="text-4xl font-bold">PONG</h1>
+        {onBackToConfig && (
+          <button
+            onClick={onBackToConfig}
+            className="bg-gray-700 hover:bg-gray-600 px-4 py-2 rounded-lg text-sm transition-colors duration-200"
+          >
+            ← Back to Config
+          </button>
+        )}
+      </div>
       <div className="mb-4 text-center">
         <p className="text-lg mb-2">Controls:</p>
         <p className="text-sm">Left Player: W (up) / S (down)</p>
