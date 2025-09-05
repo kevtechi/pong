@@ -69,6 +69,20 @@ export default function PongGame({
 
   const [gameState, setGameState] = useState(gameStateRef.current);
 
+  const resetGame = () => {
+    const state = gameStateRef.current;
+    state.ball.x = CANVAS_WIDTH / 2;
+    state.ball.y = CANVAS_HEIGHT / 2;
+    state.ball.dx = (Math.random() > 0.5 ? 1 : -1) * BALL_SPEED;
+    state.ball.dy = (Math.random() - 0.5) * BALL_SPEED;
+    state.leftPaddle.y = CANVAS_HEIGHT / 2 - PADDLE_HEIGHT / 2;
+    state.rightPaddle.y = CANVAS_HEIGHT / 2 - PADDLE_HEIGHT / 2;
+    state.score.left = 0;
+    state.score.right = 0;
+    state.gameStarted = false;
+    setGameState({ ...state });
+  };
+
   // Load ball image when ballValue changes
   useEffect(() => {
     if (ballType === "image" && ballValue) {
@@ -289,14 +303,22 @@ export default function PongGame({
     <div className="flex flex-col items-center justify-center min-h-screen bg-black text-white">
       <div className="flex items-center justify-between w-full max-w-4xl mb-4">
         <h1 className="text-4xl font-bold">PONG</h1>
-        {onBackToConfig && (
+        <div className="flex gap-3">
           <button
-            onClick={onBackToConfig}
-            className="bg-gray-700 hover:bg-gray-600 px-4 py-2 rounded-lg text-sm transition-colors duration-200"
+            onClick={resetGame}
+            className="bg-blue-600 hover:bg-blue-500 px-4 py-2 rounded-lg text-sm transition-colors duration-200"
           >
-            ← Back to Config
+            🔄 Restart
           </button>
-        )}
+          {onBackToConfig && (
+            <button
+              onClick={onBackToConfig}
+              className="bg-gray-700 hover:bg-gray-600 px-4 py-2 rounded-lg text-sm transition-colors duration-200"
+            >
+              ← Back to Config
+            </button>
+          )}
+        </div>
       </div>
       <div className="mb-4 text-center">
         <p className="text-lg mb-2">Controls:</p>
