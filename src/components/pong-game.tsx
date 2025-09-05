@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { useWebRTC } from "@/hooks/useWebRTC";
 
 interface GameState {
   ball: {
@@ -37,12 +38,16 @@ interface PongGameProps {
   ballType?: "emoji" | "image";
   ballValue?: string;
   onBackToConfig?: () => void;
+  enableMobileControl?: boolean;
+  roomId?: string;
 }
 
 export default function PongGame({
   ballType = "emoji",
   ballValue = "🎾",
   onBackToConfig,
+  enableMobileControl = false,
+  roomId = "",
 }: PongGameProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const ballImageRef = useRef<HTMLImageElement | null>(null);
@@ -73,6 +78,35 @@ export default function PongGame({
     width: BASE_CANVAS_WIDTH,
     height: BASE_CANVAS_HEIGHT,
     scale: 1,
+  });
+  const [gameRoomId] = useState(
+    () => roomId || Math.random().toString(36).substring(2, 15)
+  );
+
+  // WebRTC connection for mobile control
+  const { isConnected, peers, players } = useWebRTC({
+    roomId: gameRoomId,
+    isHost: true,
+    onPaddleMove: (direction, playerSide) => {
+      const state = gameStateRef.current;
+      if (playerSide === "left") {
+        if (direction === "up") {
+          state.leftPaddle.dy = -PADDLE_SPEED;
+        } else if (direction === "down") {
+          state.leftPaddle.dy = PADDLE_SPEED;
+        } else if (direction === "stop") {
+          state.leftPaddle.dy = 0;
+        }
+      } else if (playerSide === "right") {
+        if (direction === "up") {
+          state.rightPaddle.dy = -PADDLE_SPEED;
+        } else if (direction === "down") {
+          state.rightPaddle.dy = PADDLE_SPEED;
+        } else if (direction === "stop") {
+          state.rightPaddle.dy = 0;
+        }
+      }
+    },
   });
 
   const resetGame = () => {
@@ -366,6 +400,20 @@ export default function PongGame({
       <div className="flex items-center justify-between w-full max-w-4xl mb-4">
         <h1 className="text-4xl font-bold">PONG</h1>
         <div className="flex gap-3">
+          {enableMobileControl && (
+            <div className="flex items-center gap-2">
+              <div
+                className={`w-3 h-3 rounded-full ${
+                  isConnected ? "bg-green-500" : "bg-red-500"
+                }`}
+              ></div>
+              <span className="text-sm">
+                {isConnected
+                  ? `Mobile Connected (${peers.length})`
+                  : "Mobile Disconnected"}
+              </span>
+            </div>
+          )}
           <button
             onClick={resetGame}
             className="bg-blue-600 hover:bg-blue-500 px-4 py-2 rounded-lg text-sm transition-colors duration-200"
@@ -384,9 +432,42 @@ export default function PongGame({
       </div>
       <div className="mb-4 text-center">
         <p className="text-lg mb-2">Controls:</p>
-        <p className="text-sm">Left Player: W (up) / S (down)</p>
-        <p className="text-sm">Right Player: ↑ (up) / ↓ (down)</p>
+        <p className="text-sm">
+          Left Player: W (up) / S (down) {enableMobileControl && "(or Mobile)"}
+        </p>
+        <p className="text-sm">
+          Right Player: ↑ (up) / ↓ (down) {enableMobileControl && "(or Mobile)"}
+        </p>
         <p className="text-sm">Start: SPACE</p>
+        {enableMobileControl && (
+          <div className="mt-4">
+            <p className="text-sm text-gray-400 mb-2">
+              Connected mobile players: {players.length}/2
+            </p>
+            {players.length > 0 && (
+              <div className="flex items-center justify-center gap-4 text-xs">
+                {players.map((player) => (
+                  <div key={player.id} className="flex items-center gap-1">
+                    <span>📱</span>
+                    <span
+                      className={`px-2 py-1 rounded ${
+                        player.side === "left" ? "bg-blue-900" : "bg-red-900"
+                      }`}
+                    >
+                      {player.side === "left" ? "🔵" : "🔴"}{" "}
+                      {player.id.substring(0, 6)}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
+            {players.length >= 2 && (
+              <p className="text-sm text-green-400 mt-2">
+                ✓ Both players connected via mobile!
+              </p>
+            )}
+          </div>
+        )}
       </div>
       <canvas
         ref={canvasRef}

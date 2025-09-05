@@ -8,10 +8,19 @@ export default function Home() {
   const [showGame, setShowGame] = useState(false);
   const [ballType, setBallType] = useState<"emoji" | "image">("emoji");
   const [ballValue, setBallValue] = useState("🎾");
+  const [enableMobileControl, setEnableMobileControl] = useState(false);
+  const [roomId, setRoomId] = useState("");
 
-  const handleStartGame = (type: "emoji" | "image", value: string) => {
+  const handleStartGame: (
+    ballType: "emoji" | "image",
+    ballValue: string,
+    enableMobileControl: boolean,
+    roomId: string
+  ) => void = (type, value, mobileControl, gameRoomId) => {
     setBallType(type);
     setBallValue(value);
+    setEnableMobileControl(mobileControl);
+    setRoomId(gameRoomId);
     setShowGame(true);
   };
 
@@ -25,6 +34,8 @@ export default function Home() {
         ballType={ballType}
         ballValue={ballValue}
         onBackToConfig={handleBackToConfig}
+        enableMobileControl={enableMobileControl}
+        roomId={roomId}
       />
     );
   }

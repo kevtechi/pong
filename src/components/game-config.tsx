@@ -1,9 +1,16 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useWebRTC } from "@/hooks/useWebRTC";
+import QRCodeDisplay from "./qr-code-display";
 
 interface GameConfigProps {
-  onStartGame: (ballType: "emoji" | "image", ballValue: string) => void;
+  onStartGame: (
+    ballType: "emoji" | "image",
+    ballValue: string,
+    enableMobileControl: boolean,
+    roomId: string
+  ) => void;
 }
 
 const EMOJI_OPTIONS = [
@@ -31,6 +38,15 @@ export default function GameConfig({ onStartGame }: GameConfigProps) {
   const [selectedEmoji, setSelectedEmoji] = useState("🎾");
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [ballType, setBallType] = useState<"emoji" | "image">("emoji");
+  const [enableMobileControl, setEnableMobileControl] = useState(false);
+  const [roomId] = useState(() => Math.random().toString(36).substring(2, 15));
+
+  // WebRTC connection for mobile control
+  const { isConnected, players } = useWebRTC({
+    roomId,
+    isHost: true,
+    onPaddleMove: () => {}, // We don't handle moves in config
+  });
 
   // Load saved configuration from localStorage on mount
   useEffect(() => {
@@ -80,9 +96,9 @@ export default function GameConfig({ onStartGame }: GameConfigProps) {
 
   const handleStartGame = () => {
     if (ballType === "emoji") {
-      onStartGame("emoji", selectedEmoji);
+      onStartGame("emoji", selectedEmoji, enableMobileControl, roomId);
     } else if (ballType === "image" && selectedImage) {
-      onStartGame("image", selectedImage);
+      onStartGame("image", selectedImage, enableMobileControl, roomId);
     }
   };
 
@@ -187,6 +203,105 @@ export default function GameConfig({ onStartGame }: GameConfigProps) {
               </div>
             </div>
           )}
+
+          {/* Mobile Control Option */}
+          <div className="mb-8">
+            <h3 className="text-xl font-medium mb-4 text-center">
+              Mobile Control
+            </h3>
+            <div className="flex justify-center">
+              <label className="flex items-center gap-3 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={enableMobileControl}
+                  onChange={(e) => setEnableMobileControl(e.target.checked)}
+                  className="w-5 h-5 text-blue-600 bg-gray-700 border-gray-600 rounded focus:ring-blue-500 focus:ring-2"
+                />
+                <span className="text-lg">
+                  Enable mobile control for both players
+                </span>
+              </label>
+            </div>
+            {enableMobileControl && (
+              <div className="mt-4">
+                <p className="text-sm text-gray-400 text-center mb-4">
+                  Scan the QR code with your phone to join as a player
+                </p>
+                <div className="flex justify-center mb-4">
+                  <div className="bg-gray-800 rounded-lg p-4 border-2 border-gray-600">
+                    <QRCodeDisplay roomId={roomId} />
+                  </div>
+                </div>
+                <div className="text-center">
+                  <div className="flex items-center justify-center gap-2 mb-2">
+                    <div
+                      className={`w-3 h-3 rounded-full ${
+                        isConnected ? "bg-green-500" : "bg-red-500"
+                      }`}
+                    ></div>
+                    <span className="text-sm">
+                      {isConnected ? "Connected" : "Disconnected"}
+                    </span>
+                  </div>
+                  <p className="text-xs text-gray-500 mb-3">
+                    Connected players: {players.length}/2
+                  </p>
+
+                  {/* Player Status Display */}
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-center gap-3">
+                      <div className="flex items-center gap-2">
+                        <span className="text-lg">📱</span>
+                        <span className="text-sm">Left Player</span>
+                        <div
+                          className={`w-2 h-2 rounded-full ${
+                            players.find((p) => p.side === "left")?.isConnected
+                              ? "bg-green-500"
+                              : "bg-gray-500"
+                          }`}
+                        ></div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-lg">📱</span>
+                        <span className="text-sm">Right Player</span>
+                        <div
+                          className={`w-2 h-2 rounded-full ${
+                            players.find((p) => p.side === "right")?.isConnected
+                              ? "bg-green-500"
+                              : "bg-gray-500"
+                          }`}
+                        ></div>
+                      </div>
+                    </div>
+
+                    {/* Show connected player IDs */}
+                    {players.length > 0 && (
+                      <div className="text-xs text-gray-400">
+                        {players.map((player) => (
+                          <div
+                            key={player.id}
+                            className="flex items-center justify-center gap-1"
+                          >
+                            <span>📱</span>
+                            <span
+                              className={`px-1 rounded ${
+                                player.side === "left"
+                                  ? "bg-blue-900"
+                                  : "bg-red-900"
+                              }`}
+                            >
+                              {player.side === "left" ? "🔵" : "🔴"}{" "}
+                              {player.id.substring(0, 6)}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
 
           <div className="text-center mb-8">
             <p className="text-lg mb-4">Preview:</p>
