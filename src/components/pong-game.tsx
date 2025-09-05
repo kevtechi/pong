@@ -24,8 +24,9 @@ interface GameState {
   gameStarted: boolean;
 }
 
-const CANVAS_WIDTH = 800;
-const CANVAS_HEIGHT = 400;
+// Base dimensions - will be scaled based on viewport
+const BASE_CANVAS_WIDTH = 800;
+const BASE_CANVAS_HEIGHT = 400;
 const PADDLE_WIDTH = 15;
 const PADDLE_HEIGHT = 80;
 const BALL_SIZE = 10;
@@ -47,17 +48,17 @@ export default function PongGame({
   const ballImageRef = useRef<HTMLImageElement | null>(null);
   const gameStateRef = useRef<GameState>({
     ball: {
-      x: CANVAS_WIDTH / 2,
-      y: CANVAS_HEIGHT / 2,
+      x: BASE_CANVAS_WIDTH / 2,
+      y: BASE_CANVAS_HEIGHT / 2,
       dx: BALL_SPEED,
       dy: BALL_SPEED,
     },
     leftPaddle: {
-      y: CANVAS_HEIGHT / 2 - PADDLE_HEIGHT / 2,
+      y: BASE_CANVAS_HEIGHT / 2 - PADDLE_HEIGHT / 2,
       dy: 0,
     },
     rightPaddle: {
-      y: CANVAS_HEIGHT / 2 - PADDLE_HEIGHT / 2,
+      y: BASE_CANVAS_HEIGHT / 2 - PADDLE_HEIGHT / 2,
       dy: 0,
     },
     score: {
@@ -68,20 +69,67 @@ export default function PongGame({
   });
 
   const [gameState, setGameState] = useState(gameStateRef.current);
+  const [canvasDimensions, setCanvasDimensions] = useState({
+    width: BASE_CANVAS_WIDTH,
+    height: BASE_CANVAS_HEIGHT,
+    scale: 1,
+  });
 
   const resetGame = () => {
     const state = gameStateRef.current;
-    state.ball.x = CANVAS_WIDTH / 2;
-    state.ball.y = CANVAS_HEIGHT / 2;
+    state.ball.x = canvasDimensions.width / 2;
+    state.ball.y = canvasDimensions.height / 2;
     state.ball.dx = (Math.random() > 0.5 ? 1 : -1) * BALL_SPEED;
     state.ball.dy = (Math.random() - 0.5) * BALL_SPEED;
-    state.leftPaddle.y = CANVAS_HEIGHT / 2 - PADDLE_HEIGHT / 2;
-    state.rightPaddle.y = CANVAS_HEIGHT / 2 - PADDLE_HEIGHT / 2;
+    state.leftPaddle.y = canvasDimensions.height / 2 - PADDLE_HEIGHT / 2;
+    state.rightPaddle.y = canvasDimensions.height / 2 - PADDLE_HEIGHT / 2;
     state.score.left = 0;
     state.score.right = 0;
     state.gameStarted = false;
     setGameState({ ...state });
   };
+
+  // Calculate canvas dimensions based on viewport
+  useEffect(() => {
+    const calculateDimensions = () => {
+      const viewportWidth = window.innerWidth;
+      const viewportHeight = window.innerHeight;
+
+      // Reserve space for UI elements (header, controls, score)
+      const availableWidth = viewportWidth - 100; // 50px margin on each side
+      const availableHeight = viewportHeight - 300; // space for header, controls, score
+
+      // Calculate scale to fit the canvas while maintaining aspect ratio
+      const scaleX = availableWidth / BASE_CANVAS_WIDTH;
+      const scaleY = availableHeight / BASE_CANVAS_HEIGHT;
+      const scale = Math.min(scaleX, scaleY, 3); // Max scale of 3x for very large screens
+
+      const width = BASE_CANVAS_WIDTH * scale;
+      const height = BASE_CANVAS_HEIGHT * scale;
+
+      setCanvasDimensions({ width, height, scale });
+    };
+
+    calculateDimensions();
+    window.addEventListener("resize", calculateDimensions);
+
+    return () => window.removeEventListener("resize", calculateDimensions);
+  }, []);
+
+  // Update game state when canvas dimensions change
+  useEffect(() => {
+    const state = gameStateRef.current;
+    // Scale the ball position proportionally
+    state.ball.x = (state.ball.x / BASE_CANVAS_WIDTH) * canvasDimensions.width;
+    state.ball.y =
+      (state.ball.y / BASE_CANVAS_HEIGHT) * canvasDimensions.height;
+    state.leftPaddle.y =
+      (state.leftPaddle.y / BASE_CANVAS_HEIGHT) * canvasDimensions.height;
+    state.rightPaddle.y =
+      (state.rightPaddle.y / BASE_CANVAS_HEIGHT) * canvasDimensions.height;
+
+    setGameState({ ...state });
+  }, [canvasDimensions]);
 
   // Load ball image when ballValue changes
   useEffect(() => {
@@ -166,11 +214,11 @@ export default function PongGame({
       // Keep paddles within bounds
       state.leftPaddle.y = Math.max(
         0,
-        Math.min(CANVAS_HEIGHT - PADDLE_HEIGHT, state.leftPaddle.y)
+        Math.min(canvasDimensions.height - PADDLE_HEIGHT, state.leftPaddle.y)
       );
       state.rightPaddle.y = Math.max(
         0,
-        Math.min(CANVAS_HEIGHT - PADDLE_HEIGHT, state.rightPaddle.y)
+        Math.min(canvasDimensions.height - PADDLE_HEIGHT, state.rightPaddle.y)
       );
 
       if (state.gameStarted) {
@@ -179,7 +227,10 @@ export default function PongGame({
         state.ball.y += state.ball.dy;
 
         // Ball collision with top and bottom walls
-        if (state.ball.y <= 0 || state.ball.y >= CANVAS_HEIGHT - BALL_SIZE) {
+        if (
+          state.ball.y <= 0 ||
+          state.ball.y >= canvasDimensions.height - BALL_SIZE
+        ) {
           state.ball.dy = -state.ball.dy;
         }
 
@@ -198,7 +249,7 @@ export default function PongGame({
 
         // Ball collision with right paddle
         if (
-          state.ball.x + BALL_SIZE >= CANVAS_WIDTH - PADDLE_WIDTH &&
+          state.ball.x + BALL_SIZE >= canvasDimensions.width - PADDLE_WIDTH &&
           state.ball.y + BALL_SIZE >= state.rightPaddle.y &&
           state.ball.y <= state.rightPaddle.y + PADDLE_HEIGHT &&
           state.ball.dx > 0
@@ -213,7 +264,7 @@ export default function PongGame({
         if (state.ball.x < 0) {
           state.score.right++;
           resetBall();
-        } else if (state.ball.x > CANVAS_WIDTH) {
+        } else if (state.ball.x > canvasDimensions.width) {
           state.score.left++;
           resetBall();
         }
@@ -228,8 +279,8 @@ export default function PongGame({
 
     const resetBall = () => {
       const state = gameStateRef.current;
-      state.ball.x = CANVAS_WIDTH / 2;
-      state.ball.y = CANVAS_HEIGHT / 2;
+      state.ball.x = canvasDimensions.width / 2;
+      state.ball.y = canvasDimensions.height / 2;
       state.ball.dx = (Math.random() > 0.5 ? 1 : -1) * BALL_SPEED;
       state.ball.dy = (Math.random() - 0.5) * BALL_SPEED;
     };
@@ -237,15 +288,18 @@ export default function PongGame({
     const render = (ctx: CanvasRenderingContext2D, state: GameState) => {
       // Clear canvas
       ctx.fillStyle = "#000000";
-      ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+      ctx.fillRect(0, 0, canvasDimensions.width, canvasDimensions.height);
 
       // Draw center line
-      ctx.setLineDash([10, 10]);
+      ctx.setLineDash([
+        10 * canvasDimensions.scale,
+        10 * canvasDimensions.scale,
+      ]);
       ctx.strokeStyle = "#ffffff";
-      ctx.lineWidth = 2;
+      ctx.lineWidth = 2 * canvasDimensions.scale;
       ctx.beginPath();
-      ctx.moveTo(CANVAS_WIDTH / 2, 0);
-      ctx.lineTo(CANVAS_WIDTH / 2, CANVAS_HEIGHT);
+      ctx.moveTo(canvasDimensions.width / 2, 0);
+      ctx.lineTo(canvasDimensions.width / 2, canvasDimensions.height);
       ctx.stroke();
       ctx.setLineDash([]);
 
@@ -253,7 +307,7 @@ export default function PongGame({
       ctx.fillStyle = "#ffffff";
       ctx.fillRect(0, state.leftPaddle.y, PADDLE_WIDTH, PADDLE_HEIGHT);
       ctx.fillRect(
-        CANVAS_WIDTH - PADDLE_WIDTH,
+        canvasDimensions.width - PADDLE_WIDTH,
         state.rightPaddle.y,
         PADDLE_WIDTH,
         PADDLE_HEIGHT
@@ -261,7 +315,7 @@ export default function PongGame({
 
       // Draw ball (emoji or image)
       if (ballType === "emoji") {
-        ctx.font = `${BALL_SIZE * 2}px monospace`;
+        ctx.font = `${BALL_SIZE * 2 * canvasDimensions.scale}px monospace`;
         ctx.fillText(ballValue, state.ball.x, state.ball.y + BALL_SIZE);
       } else if (ballType === "image" && ballImageRef.current) {
         ctx.drawImage(
@@ -274,19 +328,27 @@ export default function PongGame({
       }
 
       // Draw score
-      ctx.font = "48px monospace";
+      ctx.font = `${48 * canvasDimensions.scale}px monospace`;
       ctx.fillStyle = "#ffffff";
       ctx.textAlign = "center";
-      ctx.fillText(state.score.left.toString(), CANVAS_WIDTH / 4, 60);
-      ctx.fillText(state.score.right.toString(), (3 * CANVAS_WIDTH) / 4, 60);
+      ctx.fillText(
+        state.score.left.toString(),
+        canvasDimensions.width / 4,
+        60 * canvasDimensions.scale
+      );
+      ctx.fillText(
+        state.score.right.toString(),
+        (3 * canvasDimensions.width) / 4,
+        60 * canvasDimensions.scale
+      );
 
       // Draw start message
       if (!state.gameStarted) {
-        ctx.font = "24px monospace";
+        ctx.font = `${24 * canvasDimensions.scale}px monospace`;
         ctx.fillText(
           "Press SPACE to start",
-          CANVAS_WIDTH / 2,
-          CANVAS_HEIGHT / 2 + 40
+          canvasDimensions.width / 2,
+          canvasDimensions.height / 2 + 40 * canvasDimensions.scale
         );
       }
     };
@@ -297,7 +359,7 @@ export default function PongGame({
     return () => {
       cancelAnimationFrame(animationId);
     };
-  }, [ballType, ballValue]);
+  }, [ballType, ballValue, canvasDimensions]);
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-black text-white">
@@ -328,9 +390,13 @@ export default function PongGame({
       </div>
       <canvas
         ref={canvasRef}
-        width={CANVAS_WIDTH}
-        height={CANVAS_HEIGHT}
+        width={canvasDimensions.width}
+        height={canvasDimensions.height}
         className="border-2 border-white"
+        style={{
+          maxWidth: "100%",
+          height: "auto",
+        }}
       />
       <div className="mt-4 text-center">
         <p className="text-lg">
