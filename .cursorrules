@@ -1,0 +1,163 @@
+# Project Coding Patterns and Conventions
+
+## Tech Stack & Architecture
+- **Framework**: Next.js 15 with App Router
+- **Language**: TypeScript with strict mode enabled
+- **Database**: PostgreSQL with Prisma ORM
+- **Authentication**: NextAuth.js with JWT strategy
+- **Styling**: Tailwind CSS with shadcn/ui components
+- **Package Manager**: pnpm (with npm fallback)
+- **Deployment**: Vercel
+
+## Project Structure Patterns
+
+### Directory Organization
+- `/app` - Next.js App Router pages and API routes
+- `/components` - Reusable React components
+- `/services` - Business logic and external service integrations
+- `/lib` - Utility functions and shared code
+- `/hooks` - Custom React hooks
+- `/prisma` - Database schema and migrations
+- `/public` - Static assets
+
+### File Naming Conventions
+- **Pages**: `page.tsx` (Next.js App Router convention)
+- **Layouts**: `layout.tsx`
+- **API Routes**: `route.ts`
+- **Components**: kebab-case (e.g., `task-list.tsx`)
+- **Actions**: camelCase with descriptive names (e.g., `creating.ts`, `fetching.ts`)
+- **Services**: camelCase (e.g., `tasks.ts`, `projects.ts`)
+
+## Code Patterns
+
+### Server Actions Pattern
+- Use `"use server"` directive for server actions
+- Group actions by functionality in `/app/actions/` subdirectories
+- Actions follow CRUD operations: `creating.ts`, `fetching.ts`, `editing.ts`, `deleting.ts`
+- Always validate user authentication and project permissions
+- Return typed data using Prisma types
+
+### Database Layer Pattern
+- Use Prisma Client with `server-only` import for server-side operations
+- Define custom types using `Prisma.PromiseReturnType<typeof functionName>`
+- Implement proper error handling and validation
+- Use compound unique constraints for multi-field uniqueness
+
+## Client-side fetching from the DB
+- happens through actions, always
+- actions will call services
+
+### Component Architecture
+- **UI Components**: Use shadcn/ui components with class-variance-authority (CVA)
+- **Custom Components**: Extend shadcn/ui components when needed
+- **Client Components**: Use `"use client"` directive for interactive components
+- **Server Components**: Default for static content and data fetching
+
+### Styling Patterns
+- Use Tailwind CSS with custom color variables
+- Implement dark mode support with CSS variables
+- Use `cn()` utility for conditional class merging
+- Follow shadcn/ui design system patterns
+- Use CSS custom properties for theming
+
+### State Management
+- Use React hooks for local state (`useState`, `useEffect`)
+- Implement optimistic updates for better UX
+- Use server actions for data mutations
+- Implement proper loading and error states
+
+### Authentication & Authorization
+- Use NextAuth.js with custom providers (Brevo, Resend)
+- Implement role-based access control
+- Validate user permissions at the action level
+- Use session data for user identification
+
+### API Design
+- RESTful API routes in `/app/api/`
+- Use Next.js API route handlers
+- Implement proper error responses
+- Use TypeScript for type safety
+
+### Database Schema Patterns
+- Use CUID for primary keys
+- Implement soft deletes with `deleted` boolean field
+- Use proper foreign key relationships
+- Implement audit trails with `createdAt` and `updatedAt`
+- Use enums for status and type fields
+
+### Error Handling
+- Use try-catch blocks for async operations
+- Throw descriptive error messages
+- Implement proper error boundaries in React components
+- Use toast notifications for user feedback
+
+### Performance Patterns
+- Use Next.js Image component for optimized images
+- Implement proper loading states
+- Use React.memo for expensive components
+- Implement proper caching strategies
+
+### Development Patterns
+- Use TypeScript strict mode
+- Implement proper ESLint configuration
+- Use Prettier for code formatting
+- Follow Git conventions for commits
+
+### File Organization Rules
+- Keep components close to where they're used
+- Group related functionality in subdirectories
+- Use index files for clean imports
+- Separate concerns between UI, logic, and data layers
+
+### Import Patterns
+- Use absolute imports with `@/` alias
+- Group imports: React, external libraries, internal modules, types
+- Use named exports for better tree-shaking
+- Import types separately from runtime code
+
+### Testing Patterns
+- Write unit tests for utility functions
+- Test server actions with proper mocking
+- Use integration tests for critical user flows
+- Implement proper test data management
+
+### Deployment Patterns
+- Use Vercel for hosting
+- Implement proper environment variable management
+- Use database migrations for schema changes
+- Implement proper CI/CD pipelines
+
+## Code Quality Standards
+- Use TypeScript strict mode
+- Don't ever use any as a type
+- Implement proper error handling
+- Write self-documenting code with clear variable names
+- Use consistent formatting and indentation
+- Follow React best practices and hooks rules
+- Implement proper accessibility features
+- Use semantic HTML elements
+- Implement responsive design patterns
+
+## Security Patterns
+- Validate all user inputs
+- Implement proper authentication checks
+- Use environment variables for sensitive data
+- Implement proper CORS policies
+- Use HTTPS in production
+- Sanitize user-generated content
+
+## Performance Patterns
+- Use Next.js Image optimization
+- Implement proper caching strategies
+- Use React.memo for expensive components
+- Implement proper loading states
+- Use proper bundle splitting
+- Optimize database queries
+
+## Accessibility Patterns
+- Use semantic HTML elements
+- Implement proper ARIA labels
+- Ensure keyboard navigation
+- Use proper color contrast ratios
+- Implement screen reader support
+- Test with accessibility tools
