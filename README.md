@@ -1,4 +1,38 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Pong Game
+
+A classic Pong game built with Next.js and TypeScript. Play the timeless arcade game in your browser!
+
+## How to Play
+
+### Objective
+Score points by hitting the ball past your opponent's paddle. The first player to score wins!
+
+### Controls
+- **Left Player (Left Paddle):**
+  - `W` - Move paddle up
+  - `S` - Move paddle down
+
+- **Right Player (Right Paddle):**
+  - `↑` (Up Arrow) - Move paddle up
+  - `↓` (Down Arrow) - Move paddle down
+
+- **Game Control:**
+  - `SPACE` - Start the game
+
+### Gameplay
+1. Press `SPACE` to start the game
+2. Use your paddle to hit the ball back to your opponent
+3. The ball will bounce off the top and bottom walls
+4. Score a point when the ball passes your opponent's paddle
+5. The ball speed and angle change based on where it hits your paddle
+6. Keep the ball in play and try to outscore your opponent!
+
+### Game Features
+- Real-time physics simulation
+- Dynamic ball angles based on paddle contact
+- Score tracking
+- Responsive controls
+- Classic black and white aesthetic
 
 ## Getting Started
 
@@ -16,9 +50,7 @@ bun dev
 
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
-
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+The game will load automatically and you can start playing immediately!
 
 ## Learn More
 
