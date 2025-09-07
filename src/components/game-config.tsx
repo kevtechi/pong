@@ -66,7 +66,7 @@ export default function GameConfig({ onStartGame }: GameConfigProps) {
           setBallType("image");
         }
       } catch (error) {
-        console.error("Error loading saved configuration:", error);
+        // Error loading saved configuration
       }
     }
   }, []);

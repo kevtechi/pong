@@ -5,7 +5,7 @@ const { Server } = require("socket.io");
 
 const dev = process.env.NODE_ENV !== "production";
 // const hostname = "0.0.0.0";
-const hostname = "192.168.1.88";
+const hostname = "192.168.1.189";
 const port = process.env.PORT || 3000;
 
 const app = next({ dev, hostname, port });
@@ -26,21 +26,10 @@ app.prepare().then(() => {
   });
 
   // Log server startup
-  console.log("Socket.IO server initialized");
 
   io.on("connection", (socket) => {
-    console.log(
-      "Client connected:",
-      socket.id,
-      "from:",
-      socket.handshake.address,
-      "user-agent:",
-      socket.handshake.headers["user-agent"]
-    );
-
     socket.on("join-room", (roomId) => {
       socket.join(roomId);
-      console.log(`Socket ${socket.id} joined room ${roomId}`);
 
       // Notify other clients in the room
       socket.to(roomId).emit("peer-joined", socket.id);
@@ -78,17 +67,20 @@ app.prepare().then(() => {
       });
     });
 
-    socket.on("disconnect", (reason) => {
-      console.log("Client disconnected:", socket.id, "reason:", reason);
+    socket.on("player-info", (data) => {
+      socket.to(data.roomId).emit("player-info", {
+        playerSide: data.playerSide,
+        playerId: data.playerId,
+        from: socket.id,
+      });
     });
+
+    socket.on("disconnect", (reason) => {});
   });
 
   httpServer
     .once("error", (err) => {
-      console.error(err);
       process.exit(1);
     })
-    .listen(port, () => {
-      console.log(`> Ready on http://${hostname}:${port}`);
-    });
+    .listen(port, () => {});
 });

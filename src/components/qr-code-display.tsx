@@ -13,7 +13,7 @@ export default function QRCodeDisplay({ roomId }: QRCodeDisplayProps) {
   useEffect(() => {
     if (canvasRef.current && roomId) {
       // const controllerUrl = `${window.location.origin}/controller?room=${roomId}`;
-      const controllerUrl = `http://192.168.1.88:3000/controller?room=${roomId}`;
+      const controllerUrl = `http://192.168.1.189:3000/controller?room=${roomId}`;
 
       QRCode.toCanvas(
         canvasRef.current,
@@ -28,7 +28,7 @@ export default function QRCodeDisplay({ roomId }: QRCodeDisplayProps) {
         },
         (error) => {
           if (error) {
-            console.error("Error generating QR code:", error);
+            // Error generating QR code
           }
         }
       );
@@ -40,7 +40,7 @@ export default function QRCodeDisplay({ roomId }: QRCodeDisplayProps) {
       <canvas ref={canvasRef} className="border border-gray-600 rounded" />
       <p className="text-xs text-gray-500 mt-2 max-w-xs break-all">
         {/* {window.location.origin}/controller?room={roomId} */}
-        http://192.168.1.88:3000/controller?room={roomId}
+        http://192.168.1.189:3000/controller?room={roomId}
       </p>
     </div>
   );

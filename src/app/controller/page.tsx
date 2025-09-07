@@ -58,7 +58,7 @@ export default function ControllerPage({}: ControllerPageProps) {
 
   if (!roomId) {
     return (
-      <div className="min-h-screen bg-black text-white flex items-center justify-center">
+      <div className="controller-no-scroll bg-black text-white flex items-center justify-center">
         <div className="text-center">
           <h1 className="text-2xl font-bold mb-4">Pong Mobile Controller</h1>
           <p className="text-gray-400">No room ID provided</p>
@@ -69,37 +69,37 @@ export default function ControllerPage({}: ControllerPageProps) {
 
   if (!playerSide) {
     return (
-      <div className="min-h-screen bg-black text-white flex items-center justify-center">
+      <div className="controller-no-scroll bg-black text-white flex items-center justify-center">
         <div className="text-center max-w-md mx-auto p-6">
-          <h1 className="text-3xl font-bold mb-6">Choose Your Side</h1>
-          <p className="text-gray-400 mb-8">
+          <h1 className="text-2xl font-bold mb-4">Choose Your Side</h1>
+          <p className="text-gray-400 mb-6">
             Select which player you want to control
           </p>
 
-          <div className="space-y-4">
+          <div className="space-y-3">
             <button
               onClick={() => handlePlayerSideSelection("left")}
-              className="w-full bg-blue-600 hover:bg-blue-500 px-8 py-4 rounded-lg text-xl font-semibold transition-colors duration-200"
+              className="w-full bg-blue-600 hover:bg-blue-500 px-6 py-3 rounded-lg text-lg font-semibold transition-colors duration-200"
             >
               Left Player
             </button>
             <button
               onClick={() => handlePlayerSideSelection("right")}
-              className="w-full bg-red-600 hover:bg-red-500 px-8 py-4 rounded-lg text-xl font-semibold transition-colors duration-200"
+              className="w-full bg-red-600 hover:bg-red-500 px-6 py-3 rounded-lg text-lg font-semibold transition-colors duration-200"
             >
               Right Player
             </button>
           </div>
 
-          <div className="mt-8 text-sm text-gray-500">
+          <div className="mt-6 text-xs text-gray-500">
             <p>Room: {roomId}</p>
-            <p className="flex items-center justify-center gap-2 mt-2">
+            <p className="flex items-center justify-center gap-2 mt-1">
               <span>📱</span>
               <span>Your ID: {playerId.substring(0, 8)}</span>
             </p>
-            <div className="flex items-center justify-center gap-2 mt-2">
+            <div className="flex items-center justify-center gap-2 mt-1">
               <div
-                className={`w-3 h-3 rounded-full ${
+                className={`w-2 h-2 rounded-full ${
                   isConnected ? "bg-green-500" : "bg-red-500"
                 }`}
               ></div>
@@ -112,20 +112,16 @@ export default function ControllerPage({}: ControllerPageProps) {
   }
 
   return (
-    <div className="min-h-screen bg-black text-white flex flex-col">
-      {/* Header */}
-      <div className="p-4 text-center border-b border-gray-800">
-        <h1 className="text-2xl font-bold">Pong Controller</h1>
-        <p className="text-sm text-gray-400">Room: {roomId}</p>
-        <p className="text-lg font-semibold mt-2">
+    <div className="controller-no-scroll bg-black text-white flex flex-col">
+      {/* Header - Portrait only */}
+      <div className="p-2 text-center border-b border-gray-800 flex-shrink-0 portrait:block landscape:hidden">
+        <h1 className="text-sm font-bold">Pong Controller</h1>
+        <p className="text-xs text-gray-400">Room: {roomId}</p>
+        <p className="text-xs font-semibold mt-1">
           {playerSide === "left" ? "🔵 Left Player" : "🔴 Right Player"}
         </p>
-        <p className="text-sm text-gray-400 mt-1 flex items-center justify-center gap-2">
-          <span>📱</span>
-          <span>ID: {playerId.substring(0, 8)}</span>
-        </p>
         <div
-          className={`inline-block px-2 py-1 rounded text-xs mt-2 ${
+          className={`inline-block px-1 py-0.5 rounded text-xs mt-1 ${
             isConnected ? "bg-green-600" : "bg-red-600"
           }`}
         >
@@ -134,24 +130,45 @@ export default function ControllerPage({}: ControllerPageProps) {
         <button
           onClick={() => {
             setPlayerSide(null);
-            // Optionally send a message that player is changing sides
           }}
-          className="block mx-auto mt-2 text-xs text-gray-400 hover:text-white underline"
+          className="block mx-auto mt-1 text-xs text-gray-400 hover:text-white underline"
         >
           Change Side
         </button>
       </div>
 
-      {/* Control Instructions */}
-      <div className="p-4 text-center">
-        <p className="text-sm text-gray-400 mb-2">
-          Touch and hold to move paddle
-        </p>
-        <p className="text-xs text-gray-500">Release to stop</p>
+      {/* Header - Landscape only */}
+      <div className="p-2 text-center border-b border-gray-800 flex-shrink-0 portrait:hidden landscape:block">
+        <div className="flex items-center justify-between">
+          <div className="text-left">
+            <h1 className="text-sm font-bold">Pong Controller</h1>
+            <p className="text-xs text-gray-400">Room: {roomId}</p>
+          </div>
+          <div className="text-center">
+            <p className="text-sm font-semibold">
+              {playerSide === "left" ? "🔵 Left Player" : "🔴 Right Player"}
+            </p>
+            <div
+              className={`inline-block px-1 py-0.5 rounded text-xs mt-1 ${
+                isConnected ? "bg-green-600" : "bg-red-600"
+              }`}
+            >
+              {isConnected ? "Connected" : "Disconnected"}
+            </div>
+          </div>
+          <button
+            onClick={() => {
+              setPlayerSide(null);
+            }}
+            className="text-xs text-gray-400 hover:text-white underline"
+          >
+            Change Side
+          </button>
+        </div>
       </div>
 
-      {/* Control Buttons */}
-      <div className="flex-1 flex flex-col justify-center items-center space-y-8 p-8">
+      {/* Control Buttons - Portrait Layout */}
+      <div className="flex-1 flex flex-col justify-center items-center space-y-16 p-4 portrait:flex landscape:hidden">
         {/* Up Button */}
         <button
           className={`w-32 h-32 rounded-full text-4xl font-bold transition-all duration-150 ${
@@ -185,11 +202,44 @@ export default function ControllerPage({}: ControllerPageProps) {
         </button>
       </div>
 
-      {/* Footer */}
-      <div className="p-4 text-center border-t border-gray-800">
-        <p className="text-xs text-gray-500">
-          Keep this page open while playing
-        </p>
+      {/* Control Buttons - Landscape Layout */}
+      <div className="flex-1 flex flex-row justify-center items-center space-x-16 p-4 portrait:hidden landscape:flex">
+        {/* Up Button (Left) */}
+        <button
+          className={`w-24 h-24 rounded-full text-3xl font-bold transition-all duration-150 ${
+            isPressing === "up"
+              ? "bg-green-600 scale-110 shadow-lg"
+              : "bg-gray-700 hover:bg-gray-600 active:bg-green-600"
+          }`}
+          onTouchStart={() => handleTouchStart("up")}
+          onTouchEnd={handleTouchEnd}
+          onMouseDown={() => handleMouseDown("up")}
+          onMouseUp={handleMouseUp}
+          onMouseLeave={handleMouseUp}
+        >
+          ↑
+        </button>
+
+        {/* Down Button (Right) */}
+        <button
+          className={`w-24 h-24 rounded-full text-3xl font-bold transition-all duration-150 ${
+            isPressing === "down"
+              ? "bg-green-600 scale-110 shadow-lg"
+              : "bg-gray-700 hover:bg-gray-600 active:bg-green-600"
+          }`}
+          onTouchStart={() => handleTouchStart("down")}
+          onTouchEnd={handleTouchEnd}
+          onMouseDown={() => handleMouseDown("down")}
+          onMouseUp={handleMouseUp}
+          onMouseLeave={handleMouseUp}
+        >
+          ↓
+        </button>
+      </div>
+
+      {/* Footer - Portrait only */}
+      <div className="p-2 text-center border-t border-gray-800 flex-shrink-0 portrait:block landscape:hidden">
+        <p className="text-xs text-gray-500">Touch and hold to move paddle</p>
       </div>
     </div>
   );

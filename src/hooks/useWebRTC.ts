@@ -33,11 +33,19 @@ export function useWebRTC({
   const peerConnectionsRef = useRef<Map<string, RTCPeerConnection>>(new Map());
   const dataChannelRef = useRef<RTCDataChannel | null>(null);
   const onPaddleMoveRef = useRef(onPaddleMove);
-
-  // Update the ref whenever onPaddleMove changes
-  useEffect(() => {
-    onPaddleMoveRef.current = onPaddleMove;
-  }, [onPaddleMove]);
+  const createPeerConnectionRef = useRef<
+    | ((peerId: string, isInitiator: boolean) => Promise<RTCPeerConnection>)
+    | null
+  >(null);
+  const handleOfferRef = useRef<
+    ((offer: RTCSessionDescriptionInit, from: string) => Promise<void>) | null
+  >(null);
+  const handleAnswerRef = useRef<
+    ((answer: RTCSessionDescriptionInit, from: string) => Promise<void>) | null
+  >(null);
+  const handleIceCandidateRef = useRef<
+    ((candidate: RTCIceCandidateInit, from: string) => Promise<void>) | null
+  >(null);
 
   const createPeerConnection = useCallback(
     async (peerId: string, isInitiator: boolean) => {
@@ -68,20 +76,14 @@ export function useWebRTC({
         });
 
         dataChannel.onopen = () => {
-          console.log("Data channel opened");
           dataChannelRef.current = dataChannel;
         };
 
         dataChannel.onmessage = (event) => {
           const data = JSON.parse(event.data);
 
-          // Handle paddle moves
-          if (data.direction && onPaddleMoveRef.current) {
-            onPaddleMoveRef.current(data.direction, data.playerSide);
-          }
-
-          // Update player information (from paddle moves or player info)
-          if (data.playerId && data.playerSide) {
+          // Handle player info messages
+          if (data.type === "player-info") {
             setPlayers((prev) => {
               const existingPlayer = prev.find((p) => p.id === data.playerId);
               if (existingPlayer) {
@@ -102,13 +104,49 @@ export function useWebRTC({
               }
             });
           }
+
+          // Handle paddle moves
+          if (data.direction && onPaddleMoveRef.current) {
+            onPaddleMoveRef.current(data.direction, data.playerSide);
+          }
         };
       } else {
         peerConnection.ondatachannel = (event) => {
           const dataChannel = event.channel;
           dataChannel.onopen = () => {
-            console.log("Data channel opened");
             dataChannelRef.current = dataChannel;
+          };
+
+          dataChannel.onmessage = (event) => {
+            const data = JSON.parse(event.data);
+
+            // Handle player info messages
+            if (data.type === "player-info") {
+              setPlayers((prev) => {
+                const existingPlayer = prev.find((p) => p.id === data.playerId);
+                if (existingPlayer) {
+                  return prev.map((p) =>
+                    p.id === data.playerId
+                      ? { ...p, side: data.playerSide, isConnected: true }
+                      : p
+                  );
+                } else {
+                  return [
+                    ...prev,
+                    {
+                      id: data.playerId,
+                      side: data.playerSide,
+                      isConnected: true,
+                    },
+                  ];
+                }
+              });
+            }
+
+            // Handle paddle moves
+            if (data.direction && onPaddleMoveRef.current) {
+              onPaddleMoveRef.current(data.direction, data.playerSide);
+            }
           };
         };
       }
@@ -171,6 +209,21 @@ export function useWebRTC({
     []
   );
 
+  // Update the refs whenever functions change
+  useEffect(() => {
+    onPaddleMoveRef.current = onPaddleMove;
+    createPeerConnectionRef.current = createPeerConnection;
+    handleOfferRef.current = handleOffer;
+    handleAnswerRef.current = handleAnswer;
+    handleIceCandidateRef.current = handleIceCandidate;
+  }, [
+    onPaddleMove,
+    createPeerConnection,
+    handleOffer,
+    handleAnswer,
+    handleIceCandidate,
+  ]);
+
   useEffect(() => {
     // Only connect if we have a roomId
     if (!roomId) {
@@ -178,8 +231,7 @@ export function useWebRTC({
     }
 
     // Initialize socket connection
-    console.log("Connecting to signaling server");
-    const socket = io("http://192.168.1.88:3000", {
+    const socket = io("http://192.168.1.189:3000", {
       path: "/api/socket",
       transports: ["websocket", "polling"],
       reconnection: true,
@@ -196,27 +248,23 @@ export function useWebRTC({
     const dataChannel = dataChannelRef.current;
 
     socket.on("connect", () => {
-      console.log("Connected to signaling server");
       setIsConnected(true);
       socket.emit("join-room", roomId);
     });
 
     socket.on("disconnect", (reason) => {
-      console.log("Disconnected from signaling server:", reason);
       setIsConnected(false);
     });
 
     socket.on("connect_error", (error) => {
-      console.error("Connection error:", error);
       setIsConnected(false);
     });
 
     socket.on("peer-joined", (peerId: string) => {
-      console.log("Peer joined:", peerId);
       setPeers((prev) => [...prev, peerId]);
 
-      if (isHost) {
-        createPeerConnection(peerId, true);
+      if (isHost && createPeerConnectionRef.current) {
+        createPeerConnectionRef.current(peerId, true);
       }
     });
 
@@ -227,9 +275,8 @@ export function useWebRTC({
         from: string;
         to: string;
       }) => {
-        console.log("Offer received:", data.offer);
-        if (data.to === socket.id) {
-          await handleOffer(data.offer, data.from);
+        if (data.to === socket.id && handleOfferRef.current) {
+          await handleOfferRef.current(data.offer, data.from);
         }
       }
     );
@@ -241,9 +288,8 @@ export function useWebRTC({
         from: string;
         to: string;
       }) => {
-        console.log("Answer received:", data.answer);
-        if (data.to === socket.id) {
-          await handleAnswer(data.answer, data.from);
+        if (data.to === socket.id && handleAnswerRef.current) {
+          await handleAnswerRef.current(data.answer, data.from);
         }
       }
     );
@@ -255,9 +301,8 @@ export function useWebRTC({
         from: string;
         to: string;
       }) => {
-        console.log("ICE candidate received:", data.candidate);
-        if (data.to === socket.id) {
-          await handleIceCandidate(data.candidate, data.from);
+        if (data.to === socket.id && handleIceCandidateRef.current) {
+          await handleIceCandidateRef.current(data.candidate, data.from);
         }
       }
     );
@@ -269,20 +314,42 @@ export function useWebRTC({
         playerSide?: "left" | "right";
         from: string;
       }) => {
-        console.log(
-          "Paddle move received:",
-          data.direction,
-          "for player:",
-          data.playerSide
-        );
         if (onPaddleMoveRef.current) {
           onPaddleMoveRef.current(data.direction, data.playerSide);
         }
       }
     );
 
+    socket.on(
+      "player-info",
+      (data: {
+        playerSide: "left" | "right";
+        playerId: string;
+        from: string;
+      }) => {
+        setPlayers((prev) => {
+          const existingPlayer = prev.find((p) => p.id === data.playerId);
+          if (existingPlayer) {
+            return prev.map((p) =>
+              p.id === data.playerId
+                ? { ...p, side: data.playerSide, isConnected: true }
+                : p
+            );
+          } else {
+            return [
+              ...prev,
+              {
+                id: data.playerId,
+                side: data.playerSide,
+                isConnected: true,
+              },
+            ];
+          }
+        });
+      }
+    );
+
     return () => {
-      console.log("Disconnecting from signaling server");
       socket.removeAllListeners();
       socket.disconnect();
       // Close all peer connections
@@ -296,14 +363,7 @@ export function useWebRTC({
         dataChannelRef.current = null;
       }
     };
-  }, [
-    roomId,
-    isHost,
-    createPeerConnection,
-    handleOffer,
-    handleAnswer,
-    handleIceCandidate,
-  ]);
+  }, [roomId, isHost]);
 
   const sendPaddleMove = (
     direction: "up" | "down" | "stop",
@@ -313,21 +373,21 @@ export function useWebRTC({
       dataChannelRef.current &&
       dataChannelRef.current.readyState === "open"
     ) {
-      dataChannelRef.current.send(
-        JSON.stringify({
-          direction,
-          playerSide,
-          playerId,
-        })
-      );
+      const dataToSend = {
+        direction,
+        playerSide,
+        playerId,
+      };
+      dataChannelRef.current.send(JSON.stringify(dataToSend));
     } else if (socketRef.current) {
       // Fallback to socket if data channel is not available
-      socketRef.current.emit("paddle-move", {
+      const dataToSend = {
         direction,
         playerSide,
         playerId,
         roomId,
-      });
+      };
+      socketRef.current.emit("paddle-move", dataToSend);
     }
   };
 
@@ -336,20 +396,20 @@ export function useWebRTC({
       dataChannelRef.current &&
       dataChannelRef.current.readyState === "open"
     ) {
-      dataChannelRef.current.send(
-        JSON.stringify({
-          type: "player-info",
-          playerSide,
-          playerId,
-        })
-      );
+      const dataToSend = {
+        type: "player-info",
+        playerSide,
+        playerId,
+      };
+      dataChannelRef.current.send(JSON.stringify(dataToSend));
     } else if (socketRef.current) {
       // Fallback to socket if data channel is not available
-      socketRef.current.emit("player-info", {
+      const dataToSend = {
         playerSide,
         playerId,
         roomId,
-      });
+      };
+      socketRef.current.emit("player-info", dataToSend);
     }
   };
 
